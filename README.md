@@ -2,7 +2,7 @@
 The finals are upon us
 
 ---
-###Prerequisites
+### Prerequisites
 
 | Requierment| info              | Installed  |
 | ---------- | ----------------- | --- |
@@ -57,5 +57,48 @@ And we get get only what we need
 └── README.md
 
 ```
+---
+From chart.yaml we can see we are pulling images for WordPress, MariaDB, Memecache and Bitnami Common(common templates).
+Also i'm taining one of the nodes due to different architecture which might cause Issues during deployments
+
+Update: The master node has worn out the sd-card and has failed, I'm moving the k3s to and x86_64 machine
+
+
+Changing values.yaml from ```type: LoadBalancer -> type: ClusterIP```
+
+
+And we install the helm chart
+```bash
+helm install wp charts/bitnami/wordpress
+NAME: wp
+LAST DEPLOYED: Mon May 15 14:18:38 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+CHART NAME: wordpress
+CHART VERSION: 16.1.2
+APP VERSION: 6.2.0
+```
+
+Forward the pod adress 
+```bash
+k port-forward --namespace default svc/wp-wordpress 3030:80
+```
+
+Admin page works
+
+![admin](imgs/Admin.png)
+
+Some light blogging 
+
+![frontpage](imgs/Hello.png)
+
+Server and databasae info
+
+![health](imgs/health%20check.png)
+
+Storage is persistent 
 
 
