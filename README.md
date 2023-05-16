@@ -11,7 +11,7 @@ The finals are upon us
 | Jenkins    | wsl2              | ✅  |
 
 Bitnami Wordpres Helm chart - since this is a huge repository and we don't need everything we can use sparse checkout
-
+# Getting the chart
 ```bash
 git clone --depth=1 https://github.com/bitnami/charts.git
 cd charts
@@ -58,15 +58,17 @@ And we get get only what we need
 
 ```
 ---
+# Yaml changes 
 From chart.yaml we can see we are pulling images for WordPress, MariaDB, Memecache and Bitnami Common(common templates).
 Also i'm taining one of the nodes due to different architecture which might cause Issues during deployments
 
-Update: The master node has worn out the sd-card and has failed, I'm moving the k3s to and x86_64 machine
+**Update:** The master node has worn out the sd-card and has failed, I'm moving the k3s to an x86_64 machine
 
 
 Changing values.yaml from ```type: LoadBalancer -> type: ClusterIP```
+Restricting deployment access
 
-
+# Test run
 And we install the helm chart
 ```bash
 helm install wp charts/bitnami/wordpress
@@ -101,4 +103,76 @@ Server and databasae info
 
 Storage is persistent 
 
+
+---
+
+# Pipelining with Jenkins
+
+Setting up Kubernetes CLI
+
+![CLI](imgs/KubeCli.png)
+
+Setting up credentials for the cluster
+
+![creds](imgs/creds.png)
+
+The pipeline is run locally, no github or webhooks
+
+Frist stage - checking for an existing namespace
+
+
+```groovy
+ withKubeConfig([credentialsId: 'Kyube', serverUrl: "${klusterIP}", restrictKubeConfigAccess : true ]) {
+                        def isCreated = sh(script: "kubectl get namespaces | grep -q '${namespace}'&& echo true || echo false", returnStdout: true).trim() == 'true'
+                        echo "${isCreated}"
+                        if (!isCreated) {
+                            sh "kubectl create namespace '${namespace}'"
+                        } else {
+                            echo "Namespace already exists"
+                        }
+ }
+```
+
+Next stage - checking for an wordpress installation in the given namespace and installs it if missing
+```groovy
+ def isCreated = sh(
+                            script: "kubectl get pods -n wp | grep -q '${podName}' && echo true || echo false",
+                            returnStdout: true).trim() == 'true'
+                            
+                        echo "${isCreated}"
+                        if (isCreated == false) {
+                            sh "helm install ${releaseName} ${chartPath} --namespace ${namespace}"
+                        } else {
+                            echo "WordPress deployment already exists"
+                        }
+ }
+```
+
+Next stage - waiting for a deployment to finish if wordpress not present 
+```groovy
+ when {
+                expression {
+                    script {
+                        withKubeConfig([credentialsId: 'Kyube', serverUrl: "${klusterIP}"]) {
+                            def deploymentName = sh(
+                                returnStdout: true,
+                                script: "kubectl rollout status '${rolloutName}' -n wp | grep -q 'successfully' && echo true || echo false"
+                            ) == 'true'
+                            return deploymentName
+                        }
+                    }
+                }
+```
+
+
+Final step - forwarding the port of the pod where wordpress is located
+```groovy
+steps {
+                withKubeConfig([credentialsId: 'Kyube', serverUrl: 'https://127.0.0.1:6443']) {
+                    sh 'kubectl port-forward --namespace wp svc/final-project-wp-scalefocus-wordpress 6060:80'
+                }
+```
+
+# Final result
+![Final](imgs/Final.png)
 
