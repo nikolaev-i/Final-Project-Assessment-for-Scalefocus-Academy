@@ -173,6 +173,11 @@ steps {
                 }
 ```
 
+Visual representing the pipeline
+![pipes](imgs/Pipeline.png)
+
+---
+
 # Final result
 ![Final](imgs/Final.png)
 
