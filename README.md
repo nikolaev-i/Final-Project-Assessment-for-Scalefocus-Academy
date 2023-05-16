@@ -173,8 +173,11 @@ steps {
                 }
 ```
 
-Visual representing the pipeline
+Visual representation of  the pipeline
+
 ![pipes](imgs/Pipeline.png)
+
+Port forwarding will stay active until it's cancled or it times out(10 minutes)
 
 ---
 
